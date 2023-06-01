@@ -3,6 +3,7 @@ import urllib.request
 import pprint
 import sqlite3
 from sqlite3 import Error
+import time
 
 
 def get_nepl_data():
@@ -33,6 +34,7 @@ def get_nepl_data():
                     nepl_data[location][match_num_str][game_name][player_name] = {}
                 if tr.find('td', class_='machine_score'):
                     machine_score = tr.find('td', class_='machine_score').text
+                    machine_score = int(machine_score.replace(',', ''))
                     nepl_data[location][match_num_str][game_name][player_name]["machine_score"] = machine_score
                 if tr.find('td', class_='machine_points'):
                     machine_points = tr.find('td', class_='machine_points').text
@@ -44,7 +46,6 @@ def dbconnect(db_file):
     conn = None
     try:
         conn = sqlite3.connect(db_file)
-        print(sqlite3.version)
     except Error as e:
         print(e)
 
@@ -62,8 +63,8 @@ def create_table(conn, create_table_sql):
         print(e)
 
 def add_data(conn, row_data):
-    sql = ''' INSERT INTO nepl(Location,Round,Game,Player,MachineScore,MachinePoints)
-              VALUES(?,?,?,?,?,?) '''
+    sql = ''' INSERT INTO nepl(Location,Week,GroupNum,Round,Game,Player,MachineScore,MachinePoints)
+              VALUES(?,?,?,?,?,?,?,?) '''
     cur = conn.cursor()
     cur.execute(sql, row_data)
     conn.commit()
@@ -71,15 +72,22 @@ def add_data(conn, row_data):
 
 if __name__=="__main__":
     
+    # slow ass PC
+    start_time = time.time()
+        
     # get nepl data
+    print("Start Collecting nepl.org data --- %s seconds ---" % (time.time() - start_time))
     nepl_data = get_nepl_data()
-    
+    print("End Collecting of nepl.org data --- %s seconds ---" % (time.time() - start_time))
+
     # connect to db
     db_file = ("./nepl.db")
 
     sql_nepl_table = """ CREATE TABLE IF NOT EXISTS nepl (
                                         id integer PRIMARY KEY,
                                         Location text NOT NULL,
+                                        Week text,
+                                        GroupNum text,
                                         Round integer,
                                         Game text,
                                         Player text,
@@ -92,12 +100,18 @@ if __name__=="__main__":
     drop_table(conn, "nepl")
 
     # create new    
+    print("Start create table --- %s seconds ---" % (time.time() - start_time))
     create_table(conn, sql_nepl_table)
+    print("End create table --- %s seconds ---" % (time.time() - start_time))
 
     # add nepl data to table
     # print comments for debug
+    print("Start inserts --- %s seconds ---" % (time.time() - start_time))
     for location, v in nepl_data.items():
         #print(location) # location
+        loc_name = location.split('-')[0].strip()
+        week = location.split('-')[1].strip()
+        group = location.split('-')[2].strip()
         for round, v_a in v.items():
             #print(round) # round
             for player, v_b in v_a.items():
@@ -106,8 +120,10 @@ if __name__=="__main__":
                     #print(machine)
                     #print(v_c["machine_score"])
                     #print(v_c["machine_points"])
-                    row_data = (location, round, player, machine, v_c["machine_score"], v_c["machine_points"] )
+
+                    row_data = (loc_name, week, group, round, player, machine, v_c["machine_score"], v_c["machine_points"] )
                     add_data(conn, row_data)
+    print("End Inserts --- %s seconds ---" % (time.time() - start_time))
 
     # how to query returned data
     #pprint.pp(nepl_data)
