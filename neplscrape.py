@@ -50,6 +50,10 @@ def dbconnect(db_file):
 
     return conn
 
+def drop_table(conn, table_name):
+    c = conn.cursor()
+    c.execute("DROP TABLE " + table_name)
+
 def create_table(conn, create_table_sql):
     try:
         c = conn.cursor()
@@ -72,6 +76,7 @@ if __name__=="__main__":
     
     # connect to db
     db_file = ("./nepl.db")
+
     sql_nepl_table = """ CREATE TABLE IF NOT EXISTS nepl (
                                         id integer PRIMARY KEY,
                                         Location text NOT NULL,
@@ -82,32 +87,27 @@ if __name__=="__main__":
                                         MachinePoints integer
                                     ); """
     conn = dbconnect(db_file)
-    
+
+    # nuke existing
+    drop_table(conn, "nepl")
+
+    # create new    
     create_table(conn, sql_nepl_table)
-    row_data = ("place", 1, "batman", "scott", "34,000", 3)
-    add_data(conn, row_data)
 
-    #sample = ('Western Mass Pinball Club - Week 5 - Group 21', {'round_1': {'Contact': {'Alexander Blaustein': {'machine_score': '193,860', 'machine_points': '7'}, 'Rick Rock': {'machine_score': '28,200', 'machine_points': '1'}, 'Connor Lafleur': {'machine_score': '104,240', 'machine_points': '4'}}}, 'round_2': {'Old Coney Island!': {'Alexander Blaustein': {'machine_score': '52,140', 'machine_points': '4'}, 'Rick Rock': {'machine_score': '131,080', 'machine_points': '7'}, 'Connor Lafleur': {'machine_score': '33,490', 'machine_points': '1'}}}, 'round_3': {'Grand Prix': {'Alexander Blaustein': {'machine_score': '382,850', 'machine_points': '7'}, 'Rick Rock': {'machine_score': '207,780', 'machine_points': '4'}, 'Connor Lafleur': {'machine_score': '129,950', 'machine_points': '1'}}}, 'round_4': {'Paragon': {'Alexander Blaustein': {'machine_score': '46,130', 'machine_points': '4'}, 'Rick Rock': {'machine_score': '52,280', 'machine_points': '7'}, 'Connor Lafleur': {'machine_score': '33,890', 'machine_points': '1'}}}})
-
+    # add nepl data to table
+    # print comments for debug
     for location, v in nepl_data.items():
-        print(location) # location
+        #print(location) # location
         for round, v_a in v.items():
-            print(round) # round
+            #print(round) # round
             for player, v_b in v_a.items():
-                print(player)
+                #print(player)
                 for machine, v_c in v_b.items():
-                    print(machine)
-                    print(v_c["machine_score"])
-                    print(v_c["machine_points"])
+                    #print(machine)
+                    #print(v_c["machine_score"])
+                    #print(v_c["machine_points"])
                     row_data = (location, round, player, machine, v_c["machine_score"], v_c["machine_points"] )
                     add_data(conn, row_data)
-
-    
-    #dbconnect
-    
-    # get nepl data
-    
-    #nepl_data = get_nepl_data()
 
     # how to query returned data
     #pprint.pp(nepl_data)
